@@ -728,6 +728,20 @@ h3 {
   font-size: 13px;
 }
 
+.priority-tag {
+  display: inline-flex;
+  min-height: 18px;
+  align-items: center;
+  margin-right: 6px;
+  padding: 1px 5px;
+  color: #7b4b00;
+  font-size: 9px;
+  font-weight: 900;
+  vertical-align: 1px;
+  background: #f7e5b7;
+  border-radius: 4px;
+}
+
 .task-copy span {
   margin-top: 3px;
   color: var(--ink-soft);
@@ -1055,7 +1069,7 @@ h3 {
 
 .course-overview {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 15px;
   padding: 14px 18px;
   background: var(--surface);
@@ -1515,6 +1529,12 @@ h3 {
   gap: 12px;
 }
 
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .progress-item {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr) 42px;
@@ -1732,7 +1752,8 @@ h3 {
   }
 
   .review-form,
-  .settings-form {
+  .settings-form,
+  .score-grid {
     grid-template-columns: 1fr;
   }
 

@@ -364,6 +364,33 @@
       });
     }
 
+    const spacedReviewOffsets = [
+      { days: 1, label: "24 小时回顾" },
+      { days: 3, label: "第 3 天回忆" },
+      { days: 7, label: "第 7 天检测" }
+    ];
+    const dueReviews = courseEvents
+      .map((event) => {
+        const delta = Math.round(
+          (parseDateKey(dateKey) - parseDateKey(event.date)) / 86400000
+        );
+        const offset = spacedReviewOffsets.find((item) => item.days === delta);
+        const tier = courseProfile(event.title).tier;
+        return offset && ["S", "A"].includes(tier) ? { event, offset, tier } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => priorityRank(a.event.title) - priorityRank(b.event.title));
+
+    for (const review of dueReviews.slice(0, 3)) {
+      tasks.push({
+        id: `spaced-${review.offset.days}-${review.event.id}`,
+        title: `${review.offset.label}：${review.event.title}`,
+        detail: `${review.event.date} 课次，先闭卷回忆，再查笔记`,
+        course: review.event.title,
+        automatic: true
+      });
+    }
+
     tasks.push({
       id: "daily-english",
       title: "英语词汇与听力",
@@ -432,10 +459,29 @@
     return tasks;
   }
 
+  function taskPriority(task, dateKey) {
+    const tierScore = { S: 55, A: 45, B: 30, C: 18 }[courseProfile(task.course).tier] || 15;
+    const scheduled = task.course && sessionsForDate(dateKey).some((event) => event.title === task.course);
+    let score = tierScore;
+
+    if (task.id.startsWith("lecture-")) score += 18;
+    if (task.id.startsWith("spaced-")) score += 22;
+    if (task.id === "math-errors") score += 16;
+    if (task.id === "cpp-practice") score += 14;
+    if (task.id === "linear-practice") score += 14;
+    if (task.id === "daily-english") score += 8;
+    if (task.id === "weekly-review") score += 10;
+    if (scheduled) score += 8;
+    if (!task.automatic) score += 10;
+    return score;
+  }
+
   function getAllTasks(dateKey) {
     const day = getDayState(dateKey);
     const custom = day.customTasks.map((task) => ({ ...task, automatic: false }));
-    return [...getAutomaticTasks(dateKey), ...custom];
+    return [...getAutomaticTasks(dateKey), ...custom].sort(
+      (a, b) => taskPriority(b, dateKey) - taskPriority(a, dateKey)
+    );
   }
 
   function taskCompletion(dateKey) {
@@ -640,15 +686,16 @@
     }
 
     container.innerHTML = tasks
-      .map((task) => {
+      .map((task, index) => {
         const done = Boolean(day.tasks[task.id]);
+        const priority = index < 3 ? '<span class="priority-tag">关键</span>' : "";
         return `
           <div class="task-row${done ? " is-done" : ""}" data-task-row="${escapeAttribute(task.id)}">
             <button class="task-check" type="button" data-task-toggle="${escapeAttribute(task.id)}" aria-label="${done ? "取消完成" : "标记完成"}">
               ${icon("check")}
             </button>
             <div class="task-copy">
-              <strong>${escapeHtml(task.title)}</strong>
+              <strong>${priority}${escapeHtml(task.title)}</strong>
               <span>${escapeHtml(task.course ? `${task.course} · ${task.detail}` : task.detail)}</span>
             </div>
             ${
@@ -763,10 +810,22 @@
     const titles = allCourseTitles;
     const weeklyHours = titles.reduce((sum, title) => sum + courseProfile(title).weeklyHours, 0);
     const coreCount = titles.filter((title) => ["S", "A"].includes(courseProfile(title).tier)).length;
+    const scoredCourses = titles
+      .map((title) => getCourseProgress(title))
+      .filter((progress) => progress.hasScore && progress.credits > 0);
+    const weightedScore = scoredCourses.length
+      ? Math.round(
+          (scoredCourses.reduce((sum, progress) => sum + progress.score * progress.credits, 0) /
+            scoredCourses.reduce((sum, progress) => sum + progress.credits, 0)) *
+            10
+        ) / 10
+      : null;
 
     document.getElementById("course-count").textContent = titles.length;
     document.getElementById("course-weekly-target").textContent = `${weeklyHours}h`;
     document.getElementById("course-core-count").textContent = coreCount;
+    document.getElementById("course-weighted-score").textContent =
+      weightedScore === null ? "--" : weightedScore;
 
     grid.innerHTML = titles
       .map((title) => {
@@ -781,6 +840,7 @@
             </div>
             <div class="course-card-meta">
               <span>计划周投入 ${profile.weeklyHours}h</span>
+              <span>目标 ${progress.target}${progress.hasScore ? ` · 当前 ${progress.score}` : ""}</span>
               <span>${next ? `下次 ${next.date.slice(5)} ${next.start}` : "本学期无后续课次"}</span>
             </div>
             <p>${escapeHtml(profile.focus)}</p>
@@ -796,10 +856,16 @@
 
   function getCourseProgress(title) {
     const stored = state.courseProgress[title] || {};
+    const profile = courseProfile(title);
+    const defaultTarget = { S: 90, A: 85, B: 85, C: 80 }[profile.tier] || 80;
     const progress = {
       review: Number(stored.review ?? 0),
       homework: Number(stored.homework ?? 0),
-      mistakes: Number(stored.mistakes ?? 0)
+      mistakes: Number(stored.mistakes ?? 0),
+      credits: Number(stored.credits ?? 0),
+      target: Number(stored.target ?? defaultTarget),
+      score: Number(stored.score ?? 0),
+      hasScore: stored.score !== undefined && stored.score !== "" && Number(stored.score) > 0
     };
     progress.overall = Math.round((progress.review + progress.homework + progress.mistakes) / 3);
     return progress;
@@ -1036,6 +1102,23 @@
         <p>${escapeHtml(profile.strategy)}</p>
       </section>
       <section class="course-detail-section">
+        <h3>成绩反推</h3>
+        <div class="score-grid">
+          <label class="field">
+            <span>课程学分</span>
+            <input type="number" min="0" max="20" step="0.5" value="${progress.credits || ""}" placeholder="待教务确认" data-course-field="credits">
+          </label>
+          <label class="field">
+            <span>目标分</span>
+            <input type="number" min="60" max="100" step="1" value="${progress.target}" data-course-field="target">
+          </label>
+          <label class="field">
+            <span>当前或预计分</span>
+            <input type="number" min="0" max="100" step="1" value="${progress.score || ""}" placeholder="尚未得到" data-course-field="score">
+          </label>
+        </div>
+      </section>
+      <section class="course-detail-section">
         <h3>进度记录</h3>
         <div class="progress-editor">
           ${["review", "homework", "mistakes"].map((key) => {
@@ -1062,6 +1145,58 @@
     if (!state.courseProgress[title]) state.courseProgress[title] = {};
     state.courseProgress[title][key] = Number(value);
     saveState();
+  }
+
+  function saveCourseField(key, value) {
+    const dialog = document.getElementById("course-dialog");
+    const title = dialog.dataset.courseTitle;
+    if (!title) return;
+    if (!state.courseProgress[title]) state.courseProgress[title] = {};
+    state.courseProgress[title][key] = value === "" ? "" : Number(value);
+    saveState();
+    renderCourses();
+  }
+
+  function escapeIcs(value) {
+    return String(value ?? "")
+      .replaceAll("\\", "\\\\")
+      .replaceAll(";", "\\;")
+      .replaceAll(",", "\\,")
+      .replaceAll("\n", "\\n");
+  }
+
+  function icsDateTime(dateKey, time) {
+    return `${dateKey.replaceAll("-", "")}T${time.replace(":", "")}00`;
+  }
+
+  function exportScheduleICS() {
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//HL Study Workbench//Course Schedule//CN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      `X-WR-CALNAME:${escapeIcs(calendarData?.term?.name || "华理学习台课表")}`
+    ];
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+    for (const event of courseEvents) {
+      lines.push(
+        "BEGIN:VEVENT",
+        `UID:${escapeIcs(event.id)}@ncst-study-workbench`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${icsDateTime(event.date, event.start)}`,
+        `DTEND:${icsDateTime(event.date, event.end)}`,
+        `SUMMARY:${escapeIcs(event.title)}`,
+        `LOCATION:${escapeIcs(event.location || "")}`,
+        `DESCRIPTION:${escapeIcs(`${event.teacher || ""} ${courseProfile(event.title).focus}`.trim())}`,
+        "END:VEVENT"
+      );
+    }
+
+    lines.push("END:VCALENDAR");
+    downloadBlob("华理学习台-2026-2027-第一学期.ics", lines.join("\r\n"), "text/calendar;charset=utf-8");
+    showToast("课表已导出，可用 iPhone 日历打开");
   }
 
   function exportReview() {
@@ -1233,10 +1368,15 @@
 
     document.getElementById("course-dialog-body").addEventListener("input", (event) => {
       const slider = event.target.closest("[data-course-progress]");
-      if (!slider) return;
-      slider.nextElementSibling.value = `${slider.value}%`;
-      saveCourseProgress(slider.dataset.courseProgress, slider.value);
-      renderCourses();
+      if (slider) {
+        slider.nextElementSibling.value = `${slider.value}%`;
+        saveCourseProgress(slider.dataset.courseProgress, slider.value);
+        renderCourses();
+        return;
+      }
+
+      const field = event.target.closest("[data-course-field]");
+      if (field) saveCourseField(field.dataset.courseField, field.value);
     });
 
     document.getElementById("review-form").addEventListener("submit", (event) => {
@@ -1254,6 +1394,7 @@
     });
 
     document.getElementById("export-review").addEventListener("click", exportReview);
+    document.getElementById("export-ics").addEventListener("click", exportScheduleICS);
 
     document.getElementById("settings-form").addEventListener("submit", saveSettings);
     document.querySelector("#settings-form button[type='submit']").addEventListener("click", saveSettings);
