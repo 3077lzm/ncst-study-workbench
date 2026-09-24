@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#123c3a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="华理学习台" />
+    <meta name="description" content="华北理工大学能源动力类大一学习打卡与保研执行工作台" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-180.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>华理学习台</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 19.5V9l8-5 8 5v10.5" />
+              <path d="M8 19.5v-6h8v6" />
+              <path d="M3 19.5h18" />
+            </svg>
+          </div>
+          <div>
+            <strong>华理学习台</strong>
+            <span>能源动力类 · 保研执行</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" id="desktop-nav"></nav>
+
+        <div class="sidebar-progress">
+          <div class="sidebar-progress-head">
+            <span>本周专注</span>
+            <strong id="sidebar-week-minutes">0 / 0 分钟</strong>
+          </div>
+          <div class="progress-track"><span id="sidebar-week-bar"></span></div>
+          <p id="sidebar-rank-note">目标：稳住专业前 10%</p>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="term-label">2026-2027 第一学期</p>
+            <h1 id="view-title">今日执行</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="today-chip">
+              <span id="live-weekday">星期三</span>
+              <strong id="live-date">09/23</strong>
+            </div>
+            <button class="button button-primary" id="top-checkin" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+              <span>今日打卡</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+        <section class="view is-active" id="view-dashboard" data-view="dashboard">
+          <div class="metric-strip" aria-label="今日概览">
+            <article class="metric">
+              <span>今日专注</span>
+              <strong id="metric-minutes">0</strong>
+              <small id="metric-minutes-note">目标 240 分钟</small>
+            </article>
+            <article class="metric">
+              <span>完成任务</span>
+              <strong id="metric-tasks">0 / 0</strong>
+              <small>课堂复习优先</small>
+            </article>
+            <article class="metric">
+              <span>连续打卡</span>
+              <strong id="metric-streak">0 天</strong>
+              <small>保持节奏，不追求熬夜</small>
+            </article>
+            <article class="metric">
+              <span>本周进度</span>
+              <strong id="metric-week">0%</strong>
+              <small id="metric-week-note">0 / 0 分钟</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel focus-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">NOW</p>
+                  <h2>当前学习</h2>
+                </div>
+                <span class="status-pill" id="class-status">无课</span>
+              </div>
+              <div class="current-course">
+                <div>
+                  <strong id="current-course-title">今天没有课程</strong>
+                  <p id="current-course-meta">可从任务清单开始学习</p>
+                </div>
+                <div class="current-course-time" id="current-course-time">--:--</div>
+              </div>
+
+              <div class="focus-layout">
+                <div class="timer-ring" id="timer-ring" style="--progress: 0deg">
+                  <div>
+                    <strong id="timer-display">45:00</strong>
+                    <span id="timer-caption">准备专注</span>
+                  </div>
+                </div>
+                <div class="timer-controls">
+                  <label class="field">
+                    <span>学习科目</span>
+                    <select id="focus-subject"></select>
+                  </label>
+                  <div class="segmented" id="duration-options" aria-label="专注时长">
+                    <button type="button" data-duration="25">25</button>
+                    <button type="button" data-duration="45" class="is-selected">45</button>
+                    <button type="button" data-duration="60">60</button>
+                  </div>
+                  <div class="button-row">
+                    <button class="button button-primary" id="timer-toggle" type="button">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      <span>开始</span>
+                    </button>
+                    <button class="icon-button" id="timer-reset" type="button" aria-label="重置计时" title="重置计时">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel tasks-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">TASKS</p>
+                  <h2>今日任务</h2>
+                </div>
+                <button class="icon-button" id="add-task" type="button" aria-label="添加任务" title="添加任务">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </div>
+              <div class="task-list" id="today-task-list"></div>
+            </section>
+
+            <section class="panel today-schedule-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">TODAY</p>
+                  <h2>今日课表</h2>
+                </div>
+                <button class="text-button" type="button" data-go-view="schedule">查看周表</button>
+              </div>
+              <div class="timeline" id="today-timeline"></div>
+            </section>
+
+            <section class="panel trend-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">14 DAYS</p>
+                  <h2>执行趋势</h2>
+                </div>
+                <span class="muted" id="trend-summary">等待数据</span>
+              </div>
+              <div class="bar-chart" id="trend-chart" aria-label="最近十四天学习分钟趋势"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-schedule" data-view="schedule">
+          <div class="toolbar">
+            <div class="week-switcher">
+              <button class="icon-button" id="prev-week" type="button" aria-label="上一周" title="上一周">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              </button>
+              <button class="text-button" id="current-week" type="button">回到本周</button>
+              <button class="icon-button" id="next-week" type="button" aria-label="下一周" title="下一周">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            </div>
+            <div class="toolbar-meta">
+              <strong id="week-label"></strong>
+              <span id="week-count"></span>
+            </div>
+          </div>
+          <div class="schedule-grid" id="schedule-grid"></div>
+        </section>
+
+        <section class="view" id="view-courses" data-view="courses">
+          <div class="toolbar">
+            <div>
+              <p class="eyebrow">PRIORITY</p>
+              <h2>课程优先级</h2>
+            </div>
+            <div class="legend">
+              <span><i class="dot dot-s"></i>S 核心</span>
+              <span><i class="dot dot-a"></i>A 重要</span>
+              <span><i class="dot dot-b"></i>B 保底</span>
+              <span><i class="dot dot-c"></i>C 常规</span>
+            </div>
+          </div>
+          <div class="course-overview">
+            <div>
+              <strong id="course-count">0</strong>
+              <span>门课程</span>
+            </div>
+            <div>
+              <strong id="course-weekly-target">0h</strong>
+              <span>周计划投入</span>
+            </div>
+            <div>
+              <strong id="course-core-count">0</strong>
+              <span>门高优先课程</span>
+            </div>
+          </div>
+          <div class="course-grid" id="course-grid"></div>
+        </section>
+
+        <section class="view" id="view-plan" data-view="plan">
+          <div class="plan-hero">
+            <div>
+              <p class="eyebrow">SEMESTER PLAN</p>
+              <h2>大一上保研底线</h2>
+              <p>先把数学、线代、英语和 C++ 做成优势学科，再用稳定出勤和规律复盘守住其余课程。</p>
+            </div>
+            <div class="goal-list">
+              <span><b>排名</b> 专业前 10%</span>
+              <span><b>课程</b> 核心课 85+，无挂科</span>
+              <span><b>英语</b> 本学期冲四级 500+</span>
+              <span><b>执行</b> 每周不少于 1,500 分钟</span>
+            </div>
+          </div>
+
+          <div class="plan-layout">
+            <section class="panel weekly-plan-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">WEEKLY RHYTHM</p>
+                  <h2>每周固定节奏</h2>
+                </div>
+                <div class="segmented weekday-tabs" id="plan-day-tabs"></div>
+              </div>
+              <div class="plan-blocks" id="plan-blocks"></div>
+            </section>
+
+            <section class="panel milestone-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">MILESTONES</p>
+                  <h2>本学期节点</h2>
+                </div>
+              </div>
+              <ol class="milestone-list" id="milestone-list"></ol>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-review" data-view="review">
+          <div class="review-layout">
+            <section class="panel review-form-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">WEEKLY REVIEW</p>
+                  <h2>本周复盘</h2>
+                </div>
+                <span class="status-pill" id="review-week-label"></span>
+              </div>
+              <form class="review-form" id="review-form">
+                <label class="field">
+                  <span>本周有效专注（分钟）</span>
+                  <input id="review-minutes" type="number" min="0" step="10" readonly />
+                </label>
+                <label class="field">
+                  <span>完成任务率（%）</span>
+                  <input id="review-task-rate" type="number" min="0" max="100" readonly />
+                </label>
+                <label class="field">
+                  <span>平均睡眠（小时）</span>
+                  <input id="review-sleep" type="number" min="0" max="12" step="0.5" placeholder="7.5" />
+                </label>
+                <label class="field">
+                  <span>自评掌握度（1-5）</span>
+                  <input id="review-mastery" type="number" min="1" max="5" step="1" placeholder="4" />
+                </label>
+                <label class="field field-wide">
+                  <span>最大的收获</span>
+                  <textarea id="review-win" rows="3" placeholder="这周最值得保留的做法"></textarea>
+                </label>
+                <label class="field field-wide">
+                  <span>下周必须修正</span>
+                  <textarea id="review-fix" rows="3" placeholder="只写一到三件最关键的事"></textarea>
+                </label>
+                <div class="form-actions">
+                  <button class="button button-primary" type="submit">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8" /><path d="M7 3v5h8" /></svg>
+                    <span>保存复盘</span>
+                  </button>
+                  <button class="button button-secondary" id="export-review" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                    <span>导出周报</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel review-chart-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">WEEKLY LOAD</p>
+                  <h2>本周执行</h2>
+                </div>
+              </div>
+              <div class="week-bars" id="week-bars"></div>
+              <div class="review-insight" id="review-insight"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-settings" data-view="settings">
+          <div class="settings-layout">
+            <section class="panel settings-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">TARGETS</p>
+                  <h2>执行目标</h2>
+                </div>
+              </div>
+              <form class="settings-form" id="settings-form">
+                <label class="field">
+                  <span>每日专注目标（分钟）</span>
+                  <input id="setting-daily-target" type="number" min="60" max="720" step="15" />
+                </label>
+                <label class="field">
+                  <span>每周专注目标（分钟）</span>
+                  <input id="setting-weekly-target" type="number" min="300" max="4200" step="60" />
+                </label>
+                <label class="field">
+                  <span>姓名或称呼</span>
+                  <input id="setting-display-name" type="text" maxlength="20" placeholder="可留空" />
+                </label>
+                <label class="field">
+                  <span>专业目标</span>
+                  <input id="setting-major" type="text" maxlength="40" />
+                </label>
+                <div class="form-actions">
+                  <button class="button button-primary" type="submit">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                    <span>保存设置</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel data-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">LOCAL DATA</p>
+                  <h2>数据管理</h2>
+                </div>
+              </div>
+              <div class="data-actions">
+                <button class="button button-secondary" id="export-data" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                  <span>导出全部数据</span>
+                </button>
+                <button class="button button-secondary" id="import-data" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M5 21h14" /></svg>
+                  <span>导入备份</span>
+                </button>
+                <button class="button button-danger" id="reset-data" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 15H6L5 6" /></svg>
+                  <span>清空本机数据</span>
+                </button>
+                <input id="import-file" type="file" accept="application/json" hidden />
+              </div>
+              <div class="data-note">
+                <strong>隐私边界</strong>
+                <p>打卡、计时、复盘和课程进度只保存在当前浏览器，不上传服务器。</p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="bottom-nav" id="mobile-nav" aria-label="移动端主导航"></nav>
+
+    <dialog class="dialog" id="task-dialog">
+      <form method="dialog" id="task-form">
+        <div class="dialog-heading">
+          <h2>添加任务</h2>
+          <button class="icon-button" value="cancel" aria-label="关闭" title="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <label class="field">
+          <span>任务内容</span>
+          <input id="task-title" type="text" maxlength="80" required />
+        </label>
+        <label class="field">
+          <span>关联课程</span>
+          <select id="task-course"></select>
+        </label>
+        <div class="form-actions">
+          <button class="button button-primary" value="default">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            <span>添加任务</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="dialog dialog-wide" id="course-dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow" id="course-dialog-tier"></p>
+          <h2 id="course-dialog-title"></h2>
+        </div>
+        <button class="icon-button" id="course-dialog-close" aria-label="关闭" title="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div id="course-dialog-body"></div>
+    </dialog>
+
+    <script src="./data.js" defer></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
